@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌊 Ocean Tic Tac Toe SUPER PRO 🔥</title>
+
+<style>
+body{
+    margin:0;
+    font-family:'Segoe UI',sans-serif;
+    background:linear-gradient(to top,#001f3f,#003f5c,#0074D9);
+    overflow:hidden;
+    text-align:center;
+    color:#aeefff;
+}
+
+h1{
+    margin-top:20px;
+    font-size:2.2em;
+    text-shadow:0 0 10px #00e5ff;
+}
+
+/* BOARD */
+.board{
+    display:grid;
+    grid-template-columns:repeat(3,110px);
+    grid-template-rows:repeat(3,110px);
+    gap:10px;
+    justify-content:center;
+    margin-top:30px;
+    perspective:1000px;
+}
+
+.cell{
+    background:#0288d1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:2.5em;
+    cursor:pointer;
+    border-radius:15px;
+    transition:transform 0.4s;
+    transform-style:preserve-3d;
+}
+.cell:hover{
+    transform:scale(1.05);
+}
+
+.flip{
+    animation:flipAnim 0.4s ease;
+}
+
+@keyframes flipAnim{
+    0%{transform:rotateY(0deg);}
+    100%{transform:rotateY(180deg);}
+}
+
+.win{
+    background:#00e5ff !important;
+    box-shadow:0 0 20px #00e5ff;
+}
+
+#status{
+    margin-top:15px;
+    font-size:1.2em;
+}
+
+/* SKOR */
+.score{
+    margin-top:10px;
+}
+
+/* BUTTON */
+button{
+    margin:8px;
+    padding:8px 20px;
+    background:#00bcd4;
+    border:none;
+    border-radius:20px;
+    color:white;
+    cursor:pointer;
+}
+button:hover{
+    background:#0097a7;
+}
+
+/* Ombak */
+.wave{
+    position:absolute;
+    bottom:0;
+    width:200%;
+    height:120px;
+    background:rgba(0,229,255,0.3);
+    border-radius:40%;
+    animation:waveMove 10s linear infinite;
+}
+@keyframes waveMove{
+    0%{transform:translateX(0);}
+    100%{transform:translateX(-50%);}
+}
+
+/* Bubble */
+.bubble{
+    position:absolute;
+    bottom:-50px;
+    width:12px;
+    height:12px;
+    background:rgba(255,255,255,0.6);
+    border-radius:50%;
+    animation:rise 6s linear infinite;
+}
+@keyframes rise{
+    0%{transform:translateY(0);}
+    100%{transform:translateY(-800px);opacity:0;}
+}
+
+/* Ikan */
+.fish{
+    position:absolute;
+    font-size:28px;
+    top:250px;
+    animation:swim 25s linear infinite;
+}
+@keyframes swim{
+    0%{left:-50px;}
+    100%{left:110%;}
+}
+
+/* Ubur-ubur */
+.jelly{
+    position:absolute;
+    font-size:30px;
+    top:150px;
+    animation:float 6s ease-in-out infinite alternate;
+    text-shadow:0 0 15px #00e5ff;
+}
+@keyframes float{
+    from{transform:translateY(0);}
+    to{transform:translateY(-30px);}
+}
+
+</style>
+</head>
+<body>
+
+<h1>🌊 Ocean Tic Tac Toe SUPER PRO 🔥</h1>
+
+<div class="board" id="board"></div>
+
+<div id="status">Giliran: X</div>
+
+<div class="score">
+Skor ❌: <span id="scoreX">0</span> |
+Skor ⭕: <span id="scoreO">0</span>
+</div>
+
+<button onclick="resetGame()">Reset</button>
+
+<div class="wave"></div>
+<div class="fish">🐟</div>
+<div class="jelly">🪼</div>
+
+<audio id="clickSound" src="switch-sound.mp3"></audio>
+<audio id="winSound" src="victory_fanfare.mp3"></audio>
+
+<script>
+const boardElement=document.getElementById("board");
+let board=["","","","","","","","",""];
+let currentPlayer="X";
+let gameActive=true;
+let scoreX=0;
+let scoreO=0;
+
+function createBoard(){
+    boardElement.innerHTML="";
+    board.forEach((val,index)=>{
+        const cell=document.createElement("div");
+        cell.classList.add("cell");
+        cell.dataset.index=index;
+        cell.innerHTML=val;
+        cell.addEventListener("click",handleClick);
+        boardElement.appendChild(cell);
+    });
+}
+createBoard();
+
+function handleClick(e){
+    const index=e.target.dataset.index;
+    if(board[index]!==""||!gameActive) return;
+
+    makeMove(index,"X");
+    if(gameActive){
+        setTimeout(()=>{
+            let bestMove=minimax(board,"O").index;
+            makeMove(bestMove,"O");
+        },500);
+    }
+}
+
+function makeMove(index,player){
+    board[index]=player;
+    playSound("clickSound");
+    createBoard();
+    checkWinner();
+}
+
+function checkWinner(){
+    const wins=[
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+    ];
+    for(let combo of wins){
+        let [a,b,c]=combo;
+        if(board[a]&&board[a]===board[b]&&board[a]===board[c]){
+            document.querySelectorAll(".cell")[a].classList.add("win");
+            document.querySelectorAll(".cell")[b].classList.add("win");
+            document.querySelectorAll(".cell")[c].classList.add("win");
+            gameActive=false;
+            playSound("winSound");
+            if(board[a]==="X"){scoreX++;document.getElementById("scoreX").textContent=scoreX;}
+            else{scoreO++;document.getElementById("scoreO").textContent=scoreO;}
+            document.getElementById("status").textContent="🎉 "+board[a]+" Menang!";
+            return;
+        }
+    }
+    if(!board.includes("")){
+        gameActive=false;
+        document.getElementById("status").textContent="🌊 Seri!";
+    }
+}
+
+function resetGame(){
+    board=["","","","","","","","",""];
+    gameActive=true;
+    document.getElementById("status").textContent="Giliran: X";
+    createBoard();
+}
+
+function minimax(newBoard,player){
+    const avail=newBoard.map((v,i)=>v===""?i:null).filter(v=>v!==null);
+
+    if(checkWin(newBoard,"X")) return {score:-10};
+    if(checkWin(newBoard,"O")) return {score:10};
+    if(avail.length===0) return {score:0};
+
+    let moves=[];
+    for(let i of avail){
+        let move={};
+        move.index=i;
+        newBoard[i]=player;
+
+        if(player==="O"){
+            let result=minimax(newBoard,"X");
+            move.score=result.score;
+        }else{
+            let result=minimax(newBoard,"O");
+            move.score=result.score;
+        }
+
+        newBoard[i]="";
+        moves.push(move);
+    }
+
+    let bestMove;
+    if(player==="O"){
+        let bestScore=-10000;
+        for(let i=0;i<moves.length;i++){
+            if(moves[i].score>bestScore){
+                bestScore=moves[i].score;
+                bestMove=i;
+            }
+        }
+    }else{
+        let bestScore=10000;
+        for(let i=0;i<moves.length;i++){
+            if(moves[i].score<bestScore){
+                bestScore=moves[i].score;
+                bestMove=i;
+            }
+        }
+    }
+    return moves[bestMove];
+}
+
+function checkWin(board,player){
+    const wins=[
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+    ];
+    return wins.some(combo=>combo.every(i=>board[i]===player));
+}
+
+function playSound(id){
+    document.getElementById(id).play();
+}
+
+/* Bubble Animation */
+function createBubble(){
+    const bubble=document.createElement("div");
+    bubble.classList.add("bubble");
+    bubble.style.left=Math.random()*window.innerWidth+"px";
+    document.body.appendChild(bubble);
+    setTimeout(()=>bubble.remove(),6000);
+}
+setInterval(createBubble,700);
+
+</script>
+</body>
+</html>
